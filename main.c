@@ -15,7 +15,7 @@ int THREAD_MAX;
 //using namespace std;
 
 // array of size MAX
-double *a;
+double *array;
 int arraySize;
 
 struct thread {
@@ -24,64 +24,56 @@ struct thread {
     int higherIndex;
 } typedef Thread;
 
+
 void generateInput() {
     FILE *input = fopen("./vetor.dat", "r");
 
     double readedNumber = 0;
 
-    a = (double *) malloc(0 * sizeof(double));
+    array = (double *) malloc(0 * sizeof(double));
 
     while(fscanf(input, "%lf", &readedNumber) != EOF) {
         arraySize++;
 
-        a = realloc(a, arraySize * sizeof(double));
+        array = realloc(array, arraySize * sizeof(double));
 
-        a[arraySize-1] = readedNumber;
+        array[arraySize-1] = readedNumber;
     }
 
     fclose(input);
 }
 
 
-void merge(int low, int mid, int high) {
+void merge(int lowerIndex, int middleIndex, int higherIndex) {
+    int leftIndex = 0; 
+    int rightIndex = 0;
+    
+    int leftSize = middleIndex - lowerIndex + 1;
+    int rightSize = higherIndex - middleIndex;
 
-    // n1 is size of left part and n2 is size of right part
-    int n1 = mid - low + 1;
-    int n2 = high - mid;
+    int arrayIndex = lowerIndex;
 
-    double *left = malloc(n1 * sizeof(double));
-    double *right = malloc(n2 * sizeof(double));
+    double *left = malloc(leftSize * sizeof(double));
+    double *right = malloc(rightSize * sizeof(double));
 
-    int i;
-    int j;
+    for (int index = 0; index < leftSize; index++)
+        left[index] = array[index + lowerIndex];
 
-    // storing values in left part
-    for (i = 0; i < n1; i++)
-        left[i] = a[i + low];
+    for (int index = 0; index < rightSize; index++)
+        right[index] = array[index + middleIndex + 1];
 
-    // storing values in right part
-    for (i = 0; i < n2; i++)
-        right[i] = a[i + mid + 1];
-
-    int k = low;
-
-    i = j = 0;
-
-    // merge left and right in ascending order
-    while (i < n1 && j < n2) {
-        if (left[i] <= right[j])
-            a[k++] = left[i++];
+    while (leftIndex < leftSize && rightIndex < rightSize) {
+        if (left[leftIndex] <= right[rightIndex])
+            array[arrayIndex++] = left[leftIndex++];
         else
-            a[k++] = right[j++];
+            array[arrayIndex++] = right[rightIndex++];
     }
 
-    // insert remaining values from left
-    while (i < n1)
-        a[k++] = left[i++];
+    while (leftIndex < leftSize)
+        array[arrayIndex++] = left[leftIndex++];
 
-    // insert remaining values from right
-    while (j < n2)
-        a[k++] = right[j++];
+    while (rightIndex < rightSize)
+        array[arrayIndex++] = right[rightIndex++];
 
     free(left);
     free(right);
@@ -120,7 +112,7 @@ void *multipleThreadsMergeSort(void *argument) {
 // Driver Code
 int main() {
     MAX = 10;
-    THREAD_MAX = 4;
+    THREAD_MAX = 8;
 
     generateInput();
 
@@ -166,7 +158,7 @@ int main() {
     printf("\n\nSorted array:\n");
 
     for (int i = 0; i < MAX; i++)
-        printf("%lf\n", a[i]);
+        printf("%lf\n", array[i]);
     
     printf("\n");
 
