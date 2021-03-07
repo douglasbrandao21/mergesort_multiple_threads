@@ -3,18 +3,7 @@
 #include <time.h>
 #include <stdlib.h>
 
-// number of elements in array
-//#define MAX 15
-//#define MAX 16
-int MAX;
 
-// number of threads
-//#define THREAD_MAX 4
-int THREAD_MAX;
-
-//using namespace std;
-
-// array of size MAX
 double *array;
 int arraySize;
 
@@ -22,7 +11,7 @@ struct thread {
     int number;
     int lowerIndex;
     int higherIndex;
-} typedef Thread;
+} typedef ThreadData;
 
 
 void generateInput() {
@@ -93,7 +82,7 @@ void mergeSort(int lowerIndex, int higherIndex) {
 
 
 void *multipleThreadsMergeSort(void *argument) {
-    Thread *thread = argument;
+    ThreadData *thread = argument;
 
     int lowerIndex = thread->lowerIndex;
     int higherIndex = thread->higherIndex;
@@ -109,58 +98,50 @@ void *multipleThreadsMergeSort(void *argument) {
     return 0;
 }
 
-// Driver Code
+
 int main() {
-    MAX = 10;
-    THREAD_MAX = 8;
+    int threadsNumber = 8;
 
     generateInput();
 
-    pthread_t threads[THREAD_MAX];
+    pthread_t threads[threadsNumber];
 
-    Thread threadsList[THREAD_MAX];
-    Thread *thread;
+    ThreadData threadsData[threadsNumber];
+    ThreadData *threadData;
 
-    int length = MAX / THREAD_MAX;
+    int length = arraySize / threadsNumber;
 
     int lowerIndex = 0;
 
-    for (int i = 0; i < THREAD_MAX; i++, lowerIndex += length) {
-        thread = &threadsList[i];
-        thread->number = i;
+    for (int index = 0; index < threadsNumber; index++, lowerIndex += length) {
+        threadData = &threadsData[index];
+        threadData->number = index;
 
-        thread->lowerIndex = lowerIndex;
-        thread->higherIndex = lowerIndex + length - 1;
+        threadData->lowerIndex = lowerIndex;
+        threadData->higherIndex = lowerIndex + length - 1;
         
-        if (i == (THREAD_MAX - 1)) thread->higherIndex = MAX - 1;
+        if (index == (threadsNumber - 1)) threadData->higherIndex = arraySize - 1;
     }
 
-    // creating 4 threads
-    for (int i = 0; i < THREAD_MAX; i++) {
-        thread = &threadsList[i];
+    for (int index = 0; index < threadsNumber; index++) {
+        threadData = &threadsData[index];
 
-        pthread_create(&threads[i], NULL, multipleThreadsMergeSort, thread);
+        pthread_create(&threads[index], NULL, multipleThreadsMergeSort, threadData);
     }
 
-    // joining all 4 threads
-    for (int i = 0; i < THREAD_MAX; i++) pthread_join(threads[i], NULL);
+    for (int index = 0; index < threadsNumber; index++) pthread_join(threads[index], NULL);
     
-    Thread *threadMerge = &threadsList[0];
+    ThreadData *threadMerge = &threadsData[0];
 
-    for (int i = 1; i < THREAD_MAX; i++) {
-        Thread *thread = &threadsList[i];
+    for (int index = 1; index < threadsNumber; index++) {
+        ThreadData *threadData = &threadsData[index];
 
-        merge(threadMerge->lowerIndex, thread->lowerIndex - 1, thread->higherIndex);
+        merge(threadMerge->lowerIndex, threadData->lowerIndex - 1, threadData->higherIndex);
     }
     
 
-    // displaying sorted array
-    printf("\n\nSorted array:\n");
-
-    for (int i = 0; i < MAX; i++)
-        printf("%lf\n", array[i]);
-    
-    printf("\n");
+    for (int index = 0; index < arraySize; index++)
+        printf("%lf\n", array[index]);
 
     return 0;
 }
