@@ -15,20 +15,15 @@ struct timeRegistry {
   long int nanoseconds;
 };
 
-void test_array_is_in_order() {
-    double max = 0;
-    for (int i = 1; i < arraySize; i ++) {
-        if (array[i] >= array[i - 1]) {
-            max = array[i];
-        } else {
-            printf("Error. Out of order sequence: %lf found\n", array[i]);
-            return;
-        }
-    }
-    printf("Array is in sorted order\n");
-}
 
 
+/**
+ * @brief format the difference of time between two given timespecs in a timeRegistry
+ * 
+ * @param initial: timespec containing the initial time
+ * @param final: timespec containing the final time
+ * @return struct timeRegistry containing the difference of time.
+ */
 struct timeRegistry getTimeRegistry(struct timespec initial, struct timespec final) {
   struct timeRegistry registry;
 
@@ -45,6 +40,12 @@ struct timeRegistry getTimeRegistry(struct timespec initial, struct timespec fin
 
 
 
+/**
+ * @brief display difference of time between two given timespecs
+ * 
+ * @param initialTime: timespec containing the initial time
+ * @param finalTime: timespec containing the final time
+ */
 void printTime(struct timespec initialTime, struct timespec finalTime) {
   struct timeRegistry searchRegistry;
   struct timeRegistry sortRegistry;
@@ -54,49 +55,66 @@ void printTime(struct timespec initialTime, struct timespec finalTime) {
   printf("Tempo de busca: %ld.%09ld\n", searchRegistry.seconds, searchRegistry.nanoseconds);
 }
 
-void merge(int left, int middle, int right) {
-    int i = 0;
-    int j = 0;
-    int k = 0;
 
-    int left_length = middle - left + 1;
-    int right_length = right - middle;
-    
-    double left_array[left_length];
-    double right_array[right_length];
 
-    for (int i = 0; i < left_length; i ++)
-        left_array[i] = array[left + i];
-    
-    for (int j = 0; j < right_length; j ++)
-        right_array[j] = array[middle + 1 + j];
-    
-    i = 0;
-    j = 0;
+/**
+ * @brief merge different arrays in just one
+ * 
+ * @param lowerIndex: lower index of array
+ * @param middleIndex: middle index of array
+ * @param higherIndex: higher index of array
+ */
+void merge(int lowerIndex, int middleIndex, int higherIndex) {
+    int leftSegmentIndex = 0;
+    int rightSegmentIndex = 0;
+    int auxiliaryIndex = 0;
 
-    while (i < left_length && j < right_length) {
-        if (left_array[i] <= right_array[j]) {
-            array[left + k] = left_array[i];
-            i ++;
+    int leftSegmentSize = middleIndex - lowerIndex + 1;
+    int rightSegmentSize = higherIndex - middleIndex;
+    
+    double leftSegment[leftSegmentSize];
+    double rightSegment[rightSegmentSize];
+
+    for (int leftSegmentIndex = 0; leftSegmentIndex < leftSegmentSize; leftSegmentIndex++)
+        leftSegment[leftSegmentIndex] = array[lowerIndex + leftSegmentIndex];
+    
+    for (int rightSegmentIndex = 0; rightSegmentIndex < rightSegmentSize; rightSegmentIndex ++)
+        rightSegment[rightSegmentIndex] = array[middleIndex + 1 + rightSegmentIndex];
+    
+    leftSegmentIndex = 0;
+    rightSegmentIndex = 0;
+
+    while (leftSegmentIndex < leftSegmentSize && rightSegmentIndex < rightSegmentSize) {
+        if (leftSegment[leftSegmentIndex] <= rightSegment[rightSegmentIndex]) {
+            array[lowerIndex + auxiliaryIndex] = leftSegment[leftSegmentIndex];
+
+            leftSegmentIndex++;
         } else {
-            array[left + k] = right_array[j];
-            j ++;
+            array[lowerIndex + auxiliaryIndex] = rightSegment[rightSegmentIndex];
+            
+            rightSegmentIndex++;
         }
-        k ++;
+
+        auxiliaryIndex ++;
     }
     
-    while (i < left_length) {
-        array[left + k] = left_array[i];
-        k ++;
-        i ++;
+    while (leftSegmentIndex < leftSegmentSize) {
+        array[lowerIndex + auxiliaryIndex] = leftSegment[leftSegmentIndex];
+
+        auxiliaryIndex++;
+        
+        leftSegmentIndex ++;
     }
 
-    while (j < right_length) {
-        array[left + k] = right_array[j];
-        k ++;
-        j ++;
+    while (rightSegmentIndex < rightSegmentSize) {
+        array[lowerIndex + auxiliaryIndex] = rightSegment[rightSegmentIndex];
+        
+        auxiliaryIndex++;
+        
+        rightSegmentIndex ++;
     }
 }
+
 
 
 /**
@@ -166,6 +184,24 @@ void *multiThreadMergeSort(void* arguments) {
 }
 
 
+/**
+ * @brief splits the array in different segments and delegate each segment to one thread
+ * 
+ */
+void mergeSegments() {
+    pthread_t threads[numbersOfThreads];
+
+    for (long i = 0; i < numbersOfThreads; i ++) {
+        int createdThread = pthread_create(&threads[i], NULL, multiThreadMergeSort, (void *)i);
+
+        if(createdThread) printf("An error has ocurred.");
+    }
+    
+    for(long i = 0; i < numbersOfThreads; i++)
+        pthread_join(threads[i], NULL);
+}
+
+
 
 /**
  * @brief read input values form vetor.dat and allocate them in the array
@@ -201,24 +237,15 @@ int main() {
     elementsPerThread = arraySize / numbersOfThreads;
     offset = arraySize % numbersOfThreads;
 
-    pthread_t threads[numbersOfThreads];
-
     clock_gettime(CLOCK_REALTIME, &initialTime);
 
-    for (long i = 0; i < numbersOfThreads; i ++) {
-        int createdThread = pthread_create(&threads[i], NULL, multiThreadMergeSort, (void *)i);
-    }
-    
-    for(long i = 0; i < numbersOfThreads; i++)
-        pthread_join(threads[i], NULL);
+    mergeSegments();
 
     mergeFinalArray(numbersOfThreads, 1);
 
     clock_gettime(CLOCK_REALTIME, &finalTime);
 
     printTime(initialTime, finalTime);
-
-    test_array_is_in_order();
 
     return 0;
 }
