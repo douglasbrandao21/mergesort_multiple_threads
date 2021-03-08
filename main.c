@@ -9,11 +9,11 @@ int elementsPerThread;
 int offset;
 int arraySize;
 
+
 struct timeRegistry {
   long int seconds;
   long int nanoseconds;
 };
- 
  
 
 /**
@@ -38,7 +38,6 @@ struct timeRegistry getTimeRegistry(struct timespec initial, struct timespec fin
 }
 
 
-
 /**
  * @brief display difference of time between two given timespecs
  * 
@@ -53,7 +52,6 @@ void printTime(struct timespec initialTime, struct timespec finalTime) {
 
   printf("Tempo de busca: %ld.%09ld\n", searchRegistry.seconds, searchRegistry.nanoseconds);
 }
-
 
 
 /**
@@ -115,7 +113,6 @@ void merge(int lowerIndex, int middleIndex, int higherIndex) {
 }
 
 
-
 /**
  * @brief merges the previously ordered array segments
  * 
@@ -138,6 +135,61 @@ void mergeFinalArray(int numberOfSegments, int aggregation) {
 }
 
 
+/**
+ * @brief auxiliary function to change value of two given doubles
+ * 
+ * @param a: number 1 (receive value of b)
+ * @param b: number 2 (receibe value of a)
+ */
+void swap(double* a, double* b) {
+    double t = *a; 
+    *a = *b;
+    *b = t;
+}
+
+
+/**
+  * @brief Function that takes last element as pivot, places the pivot element at its correct position in sorted 
+    array, and places all smaller (smaller than pivot) to left of pivot and all greater elements to right of pivot
+  * 
+  * @param array: array containing elements of vetor.dat to be ordered.
+  * @param low: initial index
+  * @param high: final index
+  * 
+  * @return index of partition
+*/
+int partition (int lowerIndex, int higherIndex) { 
+    double pivot = array[higherIndex];
+    int i = (lowerIndex - 1);
+ 
+    for (int j = lowerIndex; j <= higherIndex - 1; j++) {
+        if (array[j] < pivot) { 
+            i++;
+            swap(&array[i], &array[j]); 
+        }
+    }
+
+    swap(&array[i + 1], &array[higherIndex]);
+
+    return (i + 1);
+} 
+ 
+
+/**
+ * @brief classic sort method choosed to order the segments of original array
+ * 
+ * @param lowerIndex: lower index of segment (start)
+ * @param higherIndex: higher index of segment (end)
+ */
+void quickSort(int lowerIndex, int higherIndex) { 
+    if (lowerIndex < higherIndex) {
+        int partitionIndex = partition(lowerIndex, higherIndex);
+
+        quickSort(lowerIndex, partitionIndex - 1);
+        quickSort(partitionIndex + 1, higherIndex);
+    }
+}
+
 
 /**
  * @brief classic merge sort that will sort each part of array (divided in threads)
@@ -148,14 +200,13 @@ void mergeFinalArray(int numberOfSegments, int aggregation) {
 void mergeSort(int lowerIndex, int higherIndex) {
     if (lowerIndex < higherIndex) {
         int middleIndex = lowerIndex + (higherIndex - lowerIndex) / 2;
-        
-        mergeSort(lowerIndex, middleIndex);
-        mergeSort(middleIndex + 1, higherIndex);
+
+        quickSort(lowerIndex, middleIndex);
+        quickSort(middleIndex+1, higherIndex);
         
         merge(lowerIndex, middleIndex, higherIndex);
     }
 }
-
 
 
 /**
@@ -171,11 +222,12 @@ void *multiThreadMergeSort(void* arguments) {
     
     if (threadID == numbersOfThreads - 1) higherIndex += offset;
     
-    int middleIndex = lowerIndex + (higherIndex - lowerIndex) / 2;
     
     if (lowerIndex < higherIndex) {
-        mergeSort(lowerIndex, higherIndex);
-        mergeSort(lowerIndex + 1, higherIndex);
+        int middleIndex = lowerIndex + (higherIndex - lowerIndex) / 2;
+        
+        mergeSort(lowerIndex, middleIndex);
+        mergeSort(middleIndex + 1, higherIndex);
         merge(lowerIndex, middleIndex, higherIndex);
     }
 
@@ -201,7 +253,6 @@ void mergeSegments() {
 }
 
 
-
 /**
  * @brief read input values form vetor.dat and allocate them in the array
  * 
@@ -223,7 +274,6 @@ void generateInput() {
 
     fclose(input);
 }
-
 
 
 int main() {
