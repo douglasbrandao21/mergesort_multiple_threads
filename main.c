@@ -7,11 +7,45 @@
 double *array;
 int arraySize;
 
+
 struct thread {
     int number;
     int lowerIndex;
     int higherIndex;
 } typedef ThreadData;
+
+struct timeRegistry {
+  long int seconds;
+  long int nanoseconds;
+};
+
+
+
+struct timeRegistry getTimeRegistry(struct timespec initial, struct timespec final) {
+  struct timeRegistry registry;
+
+  if (final.tv_nsec < initial.tv_nsec) {
+    final.tv_nsec += 1000000000;
+    final.tv_sec--;
+  }
+
+  registry.seconds = (long)(final.tv_sec - initial.tv_sec);
+  registry.nanoseconds = final.tv_nsec - initial.tv_nsec;
+
+  return registry;
+}
+
+
+
+void printTime(struct timespec initialTime, struct timespec finalTime) {
+  struct timeRegistry searchRegistry;
+  struct timeRegistry sortRegistry;
+
+  searchRegistry = getTimeRegistry(initialTime, finalTime);
+
+  printf("Tempo de busca: %ld.%09ld\n", searchRegistry.seconds, searchRegistry.nanoseconds);
+}
+
 
 
 void generateInput() {
@@ -31,6 +65,7 @@ void generateInput() {
 
     fclose(input);
 }
+
 
 
 void merge(int lowerIndex, int middleIndex, int higherIndex) {
@@ -69,6 +104,7 @@ void merge(int lowerIndex, int middleIndex, int higherIndex) {
 }
 
 
+
 void mergeSort(int lowerIndex, int higherIndex) {
     int middleIndex = lowerIndex + (higherIndex - lowerIndex) / 2;
 
@@ -99,8 +135,11 @@ void *multipleThreadsMergeSort(void *argument) {
 }
 
 
+
 int main() {
     int threadsNumber = 8;
+
+    struct timespec initialTime, finalTime;
 
     generateInput();
 
@@ -123,6 +162,8 @@ int main() {
         if (index == (threadsNumber - 1)) threadData->higherIndex = arraySize - 1;
     }
 
+    clock_gettime(CLOCK_REALTIME, &initialTime);
+
     for (int index = 0; index < threadsNumber; index++) {
         threadData = &threadsData[index];
 
@@ -138,10 +179,11 @@ int main() {
 
         merge(threadMerge->lowerIndex, threadData->lowerIndex - 1, threadData->higherIndex);
     }
+
+    clock_gettime(CLOCK_REALTIME, &finalTime);
     
 
-    for (int index = 0; index < arraySize; index++)
-        printf("%lf\n", array[index]);
+    printTime(initialTime, finalTime);
 
     return 0;
 }
